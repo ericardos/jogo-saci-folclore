@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>O Salto do Saci - Folclore Brasileiro</title>
+  <style>
+    * { box-sizing: border-box; user-select: none; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #0a1a0a 0%, #1a3a1a 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+      overflow: hidden;
+    }
+
+    #game-container {
+      position: relative;
+      width: 1000px;
+      height: 667px;
+      background: #2e7d32;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+      overflow: hidden;
+      border: 4px solid #8D6E63;
+    }
+
+    /* Imagem de fundo */
+    #bg-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+      pointer-events: none;
+      transition: opacity 0.8s ease;
+    }
+
+    #bg-image.hidden {
+      opacity: 0;
+    }
+
+    #bg-fallback {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, #1a2a1a 0%, #2E7D32 40%, #1B5E20 70%, #0d1f0d 100%);
+      z-index: 0;
+      pointer-events: none;
+      display: none;
+    }
+
+    /* Tela de Parabéns */
+    #parabens-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 50;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.7);
+      animation: fadeIn 0.5s ease;
+    }
+
+    #parabens-overlay.active {
+      display: flex;
+    }
+
+    #parabens-overlay img {
+      max-width: 80%;
+      max-height: 80%;
+      object-fit: contain;
+      animation: bounceIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+      border-radius: 20px;
+      box-shadow: 0 0 60px rgba(255, 215, 0, 0.5);
+    }
+
+    #parabens-overlay .parabens-fallback {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      color: #FFD700;
+      text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+    }
+
+    #parabens-overlay .parabens-fallback h1 {
+      font-size: 4rem;
+      margin: 0;
+    }
+
+    #parabens-overlay .parabens-fallback p {
+      font-size: 2rem;
+      margin: 0;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    @keyframes bounceIn {
+      0% { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+      50% { transform: scale(1.1) rotate(3deg); }
+      70% { transform: scale(0.95) rotate(-2deg); }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    /* Indicador de Fase */
+    .fase-indicator {
+      position: absolute;
+      top: 15px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.85);
+      padding: 8px 20px;
+      border-radius: 25px;
+      color: #fff;
+      font-size: 1.2rem;
+      border: 2px solid #FFD700;
+      z-index: 20;
+      backdrop-filter: blur(5px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+    .fase-indicator span {
+      color: #FFD700;
+      font-weight: bold;
+    }
+
+    /* HUD */
+    .hud {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.85);
+      padding: 10px 25px;
+      border-radius: 25px;
+      color: #fff;
+      font-size: 1.2rem;
+      border: 2px solid #FFD700;
+      display: flex;
+      gap: 25px;
+      z-index: 20;
+      backdrop-filter: blur(5px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+    .hud span {
+      color: #FFD700;
+      font-weight: bold;
+    }
+
+    /* Caixa de Dica - MAIS TRANSPARENTE */
+    .dica-box {
+      position: absolute;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(8px);
+      padding: 15px 35px;
+      border-radius: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      z-index: 20;
+      min-width: 280px;
+      max-width: 90%;
+    }
+
+    .dica-emoji { 
+      font-size: 3.5rem; 
+      line-height: 1.2;
+      display: block;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+
+    .dica-tipo {
+      font-size: 0.9rem;
+      color: #4a4a4a;
+      margin-top: 5px;
+      font-weight: bold;
+      text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+    }
+
+    .dica-curiosidade {
+      font-size: 0.8rem;
+      color: #4E342E;
+      margin-top: 8px;
+      font-style: italic;
+      background: rgba(255, 248, 225, 0.7);
+      backdrop-filter: blur(4px);
+      padding: 6px 12px;
+      border-radius: 10px;
+      border-left: 3px solid #FF6F00;
+      text-align: left;
+      max-width: 100%;
+    }
+
+    .palavra-box {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+      justify-content: center;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding: 5px 0;
+      max-width: 100%;
+    }
+
+    .slot {
+      width: 55px;
+      height: 65px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(4px);
+      border: 3px solid rgba(51, 51, 51, 0.7);
+      border-radius: 10px;
+      font-size: 2rem;
+      font-weight: bold;
+      color: #2E7D32;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      flex-shrink: 0;
+    }
+
+    .slot.faltante {
+      border: 3px dashed #E65100;
+      background: rgba(255, 243, 224, 0.9);
+      color: #E65100;
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    .slot.silaba {
+      background: rgba(227, 242, 253, 0.9);
+      border-color: rgba(21, 101, 192, 0.7);
+      font-size: 1.6rem;
+      min-width: 70px;
+      padding: 0 8px;
+    }
+
+    .slot.silaba.faltante {
+      background: rgba(255, 243, 224, 0.9);
+      border-color: #E65100;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    /* Pedras com Letras/Sílabas */
+    .pedras-container {
+      position: absolute;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 30px;
+      z-index: 20;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 90%;
+    }
+
+    .pedra-btn {
+      width: 90px;
+      height: 90px;
+      background: radial-gradient(circle at 30% 30%, #c0c0c0, #5a5a5a 70%);
+      border: 4px solid #2b2b2b;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 2rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 8px 0 #1a1a1a, 0 10px 25px rgba(0,0,0,0.4);
+      transition: transform 0.1s, box-shadow 0.1s, background 0.3s;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      position: relative;
+      z-index: 21;
+      text-align: center;
+      padding: 5px;
+      word-break: break-word;
+    }
+
+    .pedra-btn.silaba-btn {
+      font-size: 1.6rem;
+      padding: 5px;
+      width: 100px;
+      height: 90px;
+      line-height: 1.2;
+    }
+
+    .pedra-btn:hover:not(.errou):not(.acertou) {
+      transform: scale(1.05);
+      box-shadow: 0 8px 0 #1a1a1a, 0 12px 30px rgba(0,0,0,0.5);
+    }
+
+    .pedra-btn:active:not(.errou):not(.acertou) {
+      transform: translateY(6px);
+      box-shadow: 0 2px 0 #1a1a1a;
+    }
+
+    /* Botão Jogar Novamente */
+    #btn-reiniciar {
+      position: absolute;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 45;
+      background: linear-gradient(135deg, #FFD700, #FFA000);
+      color: #333;
+      border: none;
+      padding: 15px 40px;
+      border-radius: 30px;
+      font-size: 1.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 8px 0 #E65100, 0 10px 30px rgba(0,0,0,0.3);
+      transition: transform 0.1s, box-shadow 0.1s;
+      display: none;
+      font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+      animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    #btn-reiniciar:hover {
+      transform: translateX(-50%) scale(1.05);
+      box-shadow: 0 6px 0 #E65100, 0 15px 40px rgba(0,0,0,0.4);
+    }
+
+    #btn-reiniciar:active {
+      transform: translateX(-50%) translateY(4px);
+      box-shadow: 0 4px 0 #E65100;
+    }
+
+    #btn-reiniciar.show {
+      display: block;
+    }
+
+    /* SACI */
+    #saci-character {
+      position: absolute;
+      width: 130px;
+      height: 160px;
+      bottom: 200px;
+      left: 80px;
+      transition: left 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), bottom 0.3s ease;
+      z-index: 30;
+      cursor: default;
+      filter: drop-shadow(0 10px 20px rgba(0,0,0,0.25));
+    }
+
+    #saci-character img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      -webkit-user-drag: none;
+      user-drag: none;
+    }
+
+    #saci-character .saci-fallback {
+      display: none;
+      width: 100%;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      background: radial-gradient(circle at 50% 30%, #D4A574, #8D6E63);
+      border-radius: 50% 50% 30% 30%;
+    }
+
+    #saci-character img.hidden + .saci-fallback {
+      display: flex;
+    }
+
+    .pulo-anim {
+      animation: saciPulo 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes saciPulo {
+      0% { bottom: 200px; transform: scale(1) rotate(0deg); }
+      30% { transform: scale(1.1) rotate(-5deg); }
+      60% { bottom: 380px; transform: scale(0.95) rotate(5deg); }
+      100% { bottom: 200px; transform: scale(1) rotate(0deg); }
+    }
+
+    .saci-happy {
+      animation: happyJump 0.6s ease-in-out 4;
+    }
+
+    @keyframes happyJump {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      25% { transform: scale(1.3) rotate(-8deg); }
+      50% { transform: scale(1.4) rotate(0deg); }
+      75% { transform: scale(1.3) rotate(8deg); }
+    }
+
+    .saci-sad {
+      animation: sadShake 0.5s ease-in-out;
+    }
+
+    @keyframes sadShake {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-10deg); }
+      75% { transform: rotate(10deg); }
+    }
+
+    .saci-glow {
+      animation: glowPulse 0.6s ease-in-out 4;
+    }
+
+    @keyframes glowPulse {
+      0%, 100% { filter: drop-shadow(0 10px 20px rgba(0,0,0,0.25)); transform: scale(1); }
+      50% { filter: drop-shadow(0 0 60px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 100px rgba(255, 215, 0, 0.4)); transform: scale(1.2); }
+    }
+
+    /* Efeitos das pedras */
+    .acertou {
+      background: radial-gradient(circle at 30% 30%, #81C784, #2E7D32 70%) !important;
+      border-color: #1B5E20 !important;
+      box-shadow: 0 8px 0 #1B5E20, 0 0 30px rgba(76, 175, 80, 0.5) !important;
+      transform: scale(1.1);
+    }
+
+    .errou {
+      animation: treme 0.4s ease-in-out;
+      background: radial-gradient(circle at 30% 30%, #EF5350, #C62828 70%) !important;
+    }
+
+    @keyframes treme {
+      0%, 100% { transform: translateX(0) rotate(0deg); }
+      20% { transform: translateX(-10px) rotate(-5deg); }
+      40% { transform: translateX(10px) rotate(5deg); }
+      60% { transform: translateX(-10px) rotate(-3deg); }
+      80% { transform: translateX(10px) rotate(3deg); }
+    }
+
+    /* Mensagem */
+    #mensagem {
+      position: absolute;
+      bottom: 80px;
+      width: 100%;
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 3px 3px 0 rgba(0,0,0,0.7), 0 0 20px rgba(0,0,0,0.3);
+      z-index: 20;
+      padding: 10px;
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(3px);
+      border-radius: 10px;
+      max-width: 80%;
+      margin: 0 auto;
+      left: 50%;
+      transform: translateX(-50%);
+      transition: all 0.3s ease;
+    }
+
+    #mensagem.acerto {
+      font-size: 2.5rem;
+      background: rgba(46, 125, 50, 0.8);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 60px rgba(76, 175, 80, 0.5);
+      border: 3px solid #FFD700;
+      padding: 20px;
+      max-width: 90%;
+      animation: msgPulse 0.5s ease-in-out 3;
+    }
+
+    @keyframes msgPulse {
+      0%, 100% { transform: translateX(-50%) scale(1); }
+      50% { transform: translateX(-50%) scale(1.05); }
+    }
+
+    /* Rodapé com créditos */
+    #footer {
+      position: absolute;
+      bottom: 10px;
+      width: 100%;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 0.8rem;
+      z-index: 15;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+      letter-spacing: 0.5px;
+      font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+      pointer-events: none;
+    }
+
+    #footer span {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 4px 16px;
+      border-radius: 12px;
+      backdrop-filter: blur(2px);
+      display: inline-block;
+    }
+
+    #footer a {
+      color: #FFD700;
+      text-decoration: none;
+      pointer-events: auto;
+      transition: color 0.3s;
+    }
+
+    #footer a:hover {
+      color: #FFA000;
+      text-decoration: underline;
+    }
+
+    /* Elementos decorativos folclóricos */
+    .folclore-deco {
+      position: absolute;
+      font-size: 2.5rem;
+      opacity: 0.7;
+      z-index: 1;
+      animation: floatDeco 6s ease-in-out infinite;
+    }
+
+    .folclore-deco:nth-child(1) { bottom: 80px; left: 15px; font-size: 3rem; animation-delay: 0s; }
+    .folclore-deco:nth-child(2) { bottom: 60px; right: 15px; font-size: 3.5rem; animation-delay: -2s; }
+    .folclore-deco:nth-child(3) { bottom: 100px; left: 120px; font-size: 2rem; animation-delay: -4s; }
+    .folclore-deco:nth-child(4) { bottom: 90px; right: 120px; font-size: 2.5rem; animation-delay: -1s; }
+    .folclore-deco:nth-child(5) { top: 80px; left: 40px; font-size: 2rem; animation-delay: -3s; opacity: 0.4; }
+    .folclore-deco:nth-child(6) { top: 90px; right: 40px; font-size: 2.2rem; animation-delay: -5s; opacity: 0.4; }
+
+    @keyframes floatDeco {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-15px) rotate(5deg); }
+    }
+
+    /* Confetes */
+    .confetti {
+      position: absolute;
+      pointer-events: none;
+      z-index: 40;
+      animation: confettiFall 2s ease-out forwards;
+    }
+
+    @keyframes confettiFall {
+      0% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+      100% { opacity: 0; transform: translateY(300px) rotate(720deg) scale(0); }
+    }
+
+    .celebration-star {
+      position: absolute;
+      font-size: 3rem;
+      pointer-events: none;
+      z-index: 35;
+      animation: starExplode 1.5s ease-out forwards;
+    }
+
+    @keyframes starExplode {
+      0% { opacity: 1; transform: translate(0, 0) scale(0.5) rotate(0deg); }
+      100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(2) rotate(360deg); }
+    }
+
+    /* Responsivo */
+    @media (max-width: 1020px) {
+      #game-container { width: 95vw; height: 70vh; min-height: 500px; }
+      .pedra-btn { width: 70px; height: 70px; font-size: 1.8rem; }
+      .pedra-btn.silaba-btn { width: 85px; height: 75px; font-size: 1.3rem; }
+      .pedras-container { gap: 20px; }
+      .slot { width: 45px; height: 55px; font-size: 1.6rem; }
+      .slot.silaba { min-width: 60px; font-size: 1.4rem; }
+      .dica-box { padding: 10px 20px; min-width: auto; }
+      .hud, .fase-indicator { font-size: 1rem; padding: 6px 15px; gap: 15px; }
+      #saci-character { width: 100px; height: 125px; bottom: 160px; }
+      #mensagem.acerto { font-size: 2rem; padding: 15px; }
+      #mensagem { font-size: 1.5rem; bottom: 70px; }
+      .celebration-star { font-size: 2rem; }
+      #footer { font-size: 0.7rem; }
+      #btn-reiniciar { font-size: 1.4rem; padding: 12px 30px; bottom: 90px; }
+      .folclore-deco { font-size: 2rem !important; }
+    }
+
+    @media (max-width: 600px) {
+      .pedra-btn { width: 55px; height: 55px; font-size: 1.5rem; }
+      .pedra-btn.silaba-btn { width: 70px; height: 60px; font-size: 1.1rem; }
+      .pedras-container { gap: 12px; }
+      .slot { width: 38px; height: 48px; font-size: 1.2rem; }
+      .slot.silaba { min-width: 52px; font-size: 1rem; padding: 0 4px; }
+      .dica-box { padding: 10px 15px; min-width: auto; }
+      #saci-character { width: 75px; height: 95px; bottom: 130px; left: 40px; }
+      #mensagem { font-size: 1.1rem; bottom: 60px; padding: 8px; }
+      #mensagem.acerto { font-size: 1.3rem; padding: 10px; }
+      .celebration-star { font-size: 1.5rem; }
+      .fase-indicator { font-size: 0.8rem; padding: 4px 12px; }
+      .hud { font-size: 0.8rem; padding: 4px 12px; gap: 10px; }
+      #footer { font-size: 0.6rem; bottom: 5px; }
+      #btn-reiniciar { font-size: 1.1rem; padding: 10px 24px; bottom: 80px; }
+      .palavra-box { gap: 6px; }
+      .folclore-deco { font-size: 1.5rem !important; }
+      .dica-curiosidade { font-size: 0.7rem; padding: 4px 8px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <!-- Imagem de Fundo -->
+    <img id="bg-image" src="fundo.png" alt="Fundo do jogo" 
+         onerror="this.style.display='none'; document.getElementById('bg-fallback').style.display='block';">
+    <div id="bg-fallback"></div>
+
+    <!-- Tela de Parabéns -->
+    <div id="parabens-overlay">
+      <img id="parabens-img" src="parabens.png" alt="Parabéns!" 
+           onerror="this.style.display='none'; document.getElementById('parabens-fallback').style.display='flex';">
+      <div id="parabens-fallback" class="parabens-fallback">
+        <h1>🎉 PARABÉNS! 🎉</h1>
+        <p>🌟 Você completou a Fase 1! 🌟</p>
+        <p style="font-size:1.5rem;">Preparando a Fase 2...</p>
+      </div>
+    </div>
+
+    <!-- Elementos decorativos folclóricos -->
+    <div class="folclore-deco">🧙‍♂️</div>
+    <div class="folclore-deco">🌿</div>
+    <div class="folclore-deco">🦜</div>
+    <div class="folclore-deco">🌺</div>
+    <div class="folclore-deco">🐒</div>
+    <div class="folclore-deco">🌴</div>
+
+    <!-- Indicador de Fase -->
+    <div class="fase-indicator">
+      📚 Fase: <span id="fase-tipo">Letras</span>
+    </div>
+
+    <!-- HUD -->
+    <div class="hud">
+      <div>📝 <span id="progresso">1</span>/<span id="total-fase">12</span></div>
+      <div>🏆 Pontos: <span id="pontos">0</span></div>
+    </div>
+
+    <!-- SACI -->
+    <div id="saci-character">
+      <img id="saci-img" src="saci.png" alt="Saci" 
+           onerror="this.classList.add('hidden');">
+      <div class="saci-fallback">🧙‍♂️</div>
+    </div>
+
+    <!-- Dica - MAIS TRANSPARENTE -->
+    <div class="dica-box">
+      <div id="emoji" class="dica-emoji">🦆</div>
+      <div id="palavra" class="palavra-box"></div>
+      <div id="dica-tipo" class="dica-tipo">🔤 Clique na letra correta</div>
+      <div id="dica-curiosidade" class="dica-curiosidade">📖 Clique para descobrir uma curiosidade!</div>
+    </div>
+
+    <!-- Pedras -->
+    <div id="pedras" class="pedras-container"></div>
+
+    <!-- Mensagem -->
+    <div id="mensagem">🎯 Escolha a resposta correta!</div>
+
+    <!-- Botão Jogar Novamente -->
+    <button id="btn-reiniciar">🔄 Jogar Novamente</button>
+
+    <!-- Rodapé com créditos -->
+    <div id="footer">
+      <span>✏️ criado por Prof. Ricardo Silva ARTE | 📧 <a href="mailto:e.ricardossilva@gmail.com" target="_blank">e.ricardossilva@gmail.com</a></span>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // SISTEMA DE ÁUDIO
+    // ============================================
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function tocarSom(freq, tipo, duracao, volume = 0.15) {
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = tipo;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duracao);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duracao);
+      } catch(e) {}
+    }
+
+    // ============================================
+    // DADOS DO JOGO - FASE 1: LETRAS
+    // ============================================
+    const fase1Palavras = [
+      { palavra: "PATO", emoji: "🦆", faltante: 0, opcoes: ["P", "B", "T", "D"], curiosidade: "O pato é uma ave que vive perto da água e é muito presente nos contos populares." },
+      { palavra: "BOLA", emoji: "⚽", faltante: 0, opcoes: ["B", "P", "D", "M"], curiosidade: "A bola é um dos brinquedos mais antigos da humanidade!" },
+      { palavra: "PIPOCA", emoji: "🍿", faltante: 0, opcoes: ["P", "B", "T", "D"], curiosidade: "A pipoca era consumida pelos povos indígenas muito antes dos europeus chegarem." },
+      { palavra: "BARRACA", emoji: "⛺", faltante: 0, opcoes: ["B", "P", "V", "F"], curiosidade: "As barracas são usadas em festas juninas, uma tradição muito brasileira!" },
+      { palavra: "FOGO", emoji: "🔥", faltante: 0, opcoes: ["F", "V", "P", "B"], curiosidade: "O fogo é sagrado em muitas culturas indígenas, como o fogo da lenda do Boitatá." },
+      { palavra: "VACA", emoji: "🐮", faltante: 0, opcoes: ["V", "F", "B", "P"], curiosidade: "A vaca é um animal muito importante na cultura sertaneja do Brasil." },
+      { palavra: "MANGA", emoji: "🥭", faltante: 0, opcoes: ["M", "N", "B", "P"], curiosidade: "A manga é uma fruta tropical muito consumida no Norte e Nordeste do Brasil." },
+      { palavra: "AÇAÍ", emoji: "🫐", faltante: 0, opcoes: ["A", "Ç", "C", "Á"], curiosidade: "O açaí é um fruto típico da Amazônia, muito consumido pelas populações ribeirinhas." },
+      { palavra: "TATU", emoji: "🦔", faltante: 0, opcoes: ["T", "D", "P", "B"], curiosidade: "O tatu é um animal que aparece em várias lendas indígenas, como a do Tatu-falso." },
+      { palavra: "DOCE", emoji: "🍬", faltante: 0, opcoes: ["D", "T", "B", "P"], curiosidade: "Os doces típicos brasileiros têm influência portuguesa, indígena e africana." },
+      { palavra: "GATO", emoji: "🐱", faltante: 0, opcoes: ["G", "C", "K", "J"], curiosidade: "O gato é um animal misterioso, presente em muitas lendas de todo o mundo." },
+      { palavra: "COBRA", emoji: "🐍", faltante: 0, opcoes: ["C", "G", "Q", "K"], curiosidade: "A cobra é um animal muito importante nas lendas indígenas, como a Cobra Grande." }
+    ];
+
+    // ============================================
+    // DADOS DO JOGO - FASE 2: SÍLABAS (PUPUNHA corrigida)
+    // ============================================
+    const fase2Palavras = [
+      { palavra: ["CASA"], emoji: "🏠", faltante: 0, opcoes: ["CA", "SA", "CE", "SI"], curiosidade: "A casa é o lugar onde vivemos e onde as histórias de família acontecem." },
+      { palavra: ["BOLA"], emoji: "⚽", faltante: 0, opcoes: ["BO", "LA", "BA", "LE"], curiosidade: "A bola de futebol é muito popular no Brasil, o país do futebol!" },
+      { palavra: ["PATO"], emoji: "🦆", faltante: 0, opcoes: ["PA", "TO", "TA", "PE"], curiosidade: "O pato é um personagem presente no folclore, como o Pato Selvagem." },
+      { palavra: ["GATO"], emoji: "🐱", faltante: 0, opcoes: ["GA", "TO", "GO", "TA"], curiosidade: "Na cultura popular, o gato preto está ligado a superstições e lendas." },
+      { palavra: ["PUPUNHA"], emoji: "🌴", faltante: 1, opcoes: ["PU", "PU", "NHA", "NHÃ"], curiosidade: "A pupunha é um palmito muito consumido na Amazônia, rico em nutrientes. Separa-se: pu-pu-nha." },
+      { palavra: ["TAPEREBÁ"], emoji: "🍈", faltante: 0, opcoes: ["TA", "PE", "RE", "BÁ"], curiosidade: "Taperebá é uma fruta típica da Amazônia, também conhecida como cajá." },
+      { palavra: ["IGARAPÉ"], emoji: "🏞️", faltante: 0, opcoes: ["I", "GA", "RA", "PÉ"], curiosidade: "Igarapé é um canal de água típico da Amazônia, muito importante para os ribeirinhos." },
+      { palavra: ["MANGA"], emoji: "🥭", faltante: 0, opcoes: ["MAN", "GA", "MA", "NGA"], curiosidade: "A manga é uma fruta muito presente no Norte e Nordeste, com muitas variedades." },
+      { palavra: ["PEIXE"], emoji: "🐟", faltante: 0, opcoes: ["PEI", "XE", "PAI", "XI"], curiosidade: "O peixe é um alimento fundamental para os povos da Amazônia." },
+      { palavra: ["AÇAÍ"], emoji: "🫐", faltante: 0, opcoes: ["A", "ÇA", "Í", "ÇAÍ"], curiosidade: "O açaí é um fruto típico da Amazônia, muito consumido pelas populações ribeirinhas. Separa-se: a-ça-í." },
+      { palavra: ["MOTO"], emoji: "🏍️", faltante: 0, opcoes: ["MO", "TO", "MA", "TA"], curiosidade: "A moto é um meio de transporte muito comum no interior do Brasil." },
+      { palavra: ["FOGO"], emoji: "🔥", faltante: 0, opcoes: ["FO", "GO", "FA", "GA"], curiosidade: "O fogo é um elemento sagrado nas tradições indígenas e afro-brasileiras." }
+    ];
+
+    // ============================================
+    // ESTADO DO JOGO
+    // ============================================
+    let faseAtual = 1;
+    let indiceAtual = 0;
+    let pontos = 0;
+    let bloqueado = false;
+    let palavrasDaFase = fase1Palavras;
+    let jogoCompleto = false;
+
+    const posicoesX = [290, 420, 550, 680];
+
+    // ============================================
+    // FUNÇÕES UTILITÁRIAS
+    // ============================================
+    function shuffleArray(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function dividirSilabas(palavra) {
+      const regrasEspeciais = {
+        'PUPUNHA': ['PU', 'PU', 'NHA'],
+        'MANGA': ['MAN', 'GA'],
+        'AÇAÍ': ['A', 'ÇA', 'Í'],
+        'TAPEREBÁ': ['TA', 'PE', 'RE', 'BÁ'],
+        'IGARAPÉ': ['I', 'GA', 'RA', 'PÉ'],
+        'CASA': ['CA', 'SA'],
+        'BOLA': ['BO', 'LA'],
+        'PATO': ['PA', 'TO'],
+        'GATO': ['GA', 'TO'],
+        'PEIXE': ['PEI', 'XE'],
+        'MOTO': ['MO', 'TO'],
+        'FOGO': ['FO', 'GO']
+      };
+      
+      if (regrasEspeciais[palavra]) {
+        return regrasEspeciais[palavra];
+      }
+      
+      const vogais = 'AEIOUÁÉÍÓÚÂÊÎÔÛÃẼĨÕŨ';
+      const letras = palavra.split('');
+      let silabas = [];
+      let atual = '';
+      
+      for (let i = 0; i < letras.length; i++) {
+        atual += letras[i];
+        const letraAtual = letras[i].toUpperCase();
+        const proxLetra = i < letras.length - 1 ? letras[i+1].toUpperCase() : '';
+        
+        if (vogais.includes(letraAtual) && i < letras.length - 1) {
+          if (!vogais.includes(proxLetra) && proxLetra !== 'N' && proxLetra !== 'M') {
+            silabas.push(atual);
+            atual = '';
+          }
+          else if ((proxLetra === 'N' || proxLetra === 'M') && i < letras.length - 2) {
+            if (!vogais.includes(letras[i+2].toUpperCase())) {
+              silabas.push(atual + letras[i+1]);
+              atual = '';
+              i++;
+            }
+          }
+        }
+      }
+      if (atual) silabas.push(atual);
+      
+      if (silabas.length === 0) return [palavra];
+      return silabas;
+    }
+
+    function criarEstrelas(x, y) {
+      const emojis = ['⭐', '🌟', '✨', '🎉', '🎊', '💫', '🌈'];
+      for (let i = 0; i < 12; i++) {
+        const star = document.createElement('div');
+        star.className = 'celebration-star';
+        star.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        const angle = Math.random() * 2 * Math.PI;
+        const distance = 100 + Math.random() * 200;
+        star.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+        star.style.setProperty('--ty', Math.sin(angle) * distance - 100 + 'px');
+        star.style.left = (x + Math.random() * 40 - 20) + 'px';
+        star.style.top = (y + Math.random() * 40 - 20) + 'px';
+        star.style.animationDuration = (1.2 + Math.random() * 0.8) + 's';
+        document.getElementById('game-container').appendChild(star);
+        setTimeout(() => star.remove(), 2000);
+      }
+    }
+
+    function criarConfetes(x, y, quantidade = 40) {
+      const cores = ['#FF6B6B', '#FFD93D', '#6BCB77', '#4D96FF', '#FF6BD6', '#FF8A65', '#CE93D8', '#FFD700', '#00E5FF'];
+      for (let i = 0; i < quantidade; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        const angle = Math.random() * 2 * Math.PI;
+        const distance = 50 + Math.random() * 150;
+        confetti.style.left = (x + Math.cos(angle) * distance) + 'px';
+        confetti.style.top = (y + Math.sin(angle) * distance - 50) + 'px';
+        confetti.style.background = cores[Math.floor(Math.random() * cores.length)];
+        confetti.style.width = (8 + Math.random() * 12) + 'px';
+        confetti.style.height = (8 + Math.random() * 12) + 'px';
+        confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        confetti.style.animationDuration = (1.5 + Math.random() * 0.5) + 's';
+        confetti.style.boxShadow = '0 0 10px rgba(255,255,255,0.3)';
+        document.getElementById('game-container').appendChild(confetti);
+        setTimeout(() => confetti.remove(), 2500);
+      }
+    }
+
+    function reiniciarJogo() {
+      faseAtual = 1;
+      indiceAtual = 0;
+      pontos = 0;
+      bloqueado = false;
+      jogoCompleto = false;
+      palavrasDaFase = fase1Palavras;
+      
+      document.getElementById('pontos').textContent = '0';
+      document.getElementById('btn-reiniciar').classList.remove('show');
+      
+      const bgImage = document.getElementById('bg-image');
+      bgImage.src = 'fundo.png';
+      bgImage.onerror = function() {
+        this.style.display = 'none';
+        document.getElementById('bg-fallback').style.display = 'block';
+      };
+      
+      const saciImg = document.getElementById('saci-img');
+      saciImg.src = 'saci.png';
+      saciImg.onerror = function() {
+        this.classList.add('hidden');
+      };
+      
+      document.getElementById('fase-tipo').textContent = 'Letras';
+      document.getElementById('dica-tipo').textContent = '🔤 Clique na letra correta';
+      document.getElementById('total-fase').textContent = fase1Palavras.length;
+      
+      carregarFase();
+    }
+
+    function mostrarParabens(callback) {
+      const overlay = document.getElementById('parabens-overlay');
+      overlay.classList.add('active');
+      
+      tocarSom(523, "triangle", 0.2);
+      setTimeout(() => tocarSom(659, "triangle", 0.2), 150);
+      setTimeout(() => tocarSom(784, "triangle", 0.2), 300);
+      setTimeout(() => tocarSom(1047, "triangle", 0.3), 450);
+
+      const container = document.getElementById('game-container');
+      const rect = container.getBoundingClientRect();
+      for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+          criarConfetes(
+            rect.width / 2 + Math.random() * 200 - 100,
+            rect.height / 2 + Math.random() * 200 - 100,
+            30
+          );
+        }, i * 300);
+      }
+
+      setTimeout(() => {
+        overlay.classList.remove('active');
+        if (callback) callback();
+      }, 3000);
+    }
+
+    function mudarParaFase2() {
+      faseAtual = 2;
+      indiceAtual = 0;
+      palavrasDaFase = fase2Palavras;
+      
+      const bgImage = document.getElementById('bg-image');
+      bgImage.src = 'fundo2.png';
+      bgImage.onerror = function() {
+        this.style.display = 'none';
+        document.getElementById('bg-fallback').style.display = 'block';
+      };
+      
+      const saciImg = document.getElementById('saci-img');
+      saciImg.src = 'saci2.png';
+      saciImg.onerror = function() {
+        console.warn('⚠️ Imagem saci2.png não encontrada. Usando fallback.');
+        this.classList.add('hidden');
+      };
+      
+      document.getElementById('fase-tipo').textContent = 'Sílabas';
+      document.getElementById('dica-tipo').textContent = '🔤 Clique na sílaba correta';
+      document.getElementById('total-fase').textContent = palavrasDaFase.length;
+      
+      carregarFase();
+    }
+
+    function carregarFase() {
+      bloqueado = false;
+      const fase = palavrasDaFase[indiceAtual];
+      
+      document.getElementById('progresso').textContent = indiceAtual + 1;
+      document.getElementById('total-fase').textContent = palavrasDaFase.length;
+      
+      const opcoesEmbaralhadas = shuffleArray(fase.opcoes);
+      
+      document.getElementById("emoji").textContent = fase.emoji;
+      
+      const curiosidadeEl = document.getElementById('dica-curiosidade');
+      if (fase.curiosidade) {
+        curiosidadeEl.textContent = '📖 ' + fase.curiosidade;
+        curiosidadeEl.style.display = 'block';
+      } else {
+        curiosidadeEl.style.display = 'none';
+      }
+      
+      const msg = document.getElementById("mensagem");
+      msg.textContent = faseAtual === 1 ? "🎯 Escolha a letra correta!" : "🎯 Escolha a sílaba correta!";
+      msg.style.color = "#fff";
+      msg.classList.remove('acerto');
+
+      const saci = document.getElementById("saci-character");
+      saci.style.left = "80px";
+      saci.classList.remove('saci-happy', 'saci-sad', 'saci-glow');
+
+      const palavraBox = document.getElementById("palavra");
+      palavraBox.innerHTML = "";
+      
+      if (faseAtual === 1) {
+        const letras = fase.palavra.split('');
+        for (let i = 0; i < letras.length; i++) {
+          const slot = document.createElement("div");
+          slot.classList.add("slot");
+          if (i === fase.faltante) {
+            slot.classList.add("faltante");
+            slot.textContent = "❓";
+          } else {
+            slot.textContent = letras[i];
+          }
+          palavraBox.appendChild(slot);
+        }
+      } else {
+        const palavraCompleta = fase.palavra[0];
+        const silabas = dividirSilabas(palavraCompleta);
+        const silabaFaltante = fase.opcoes[fase.faltante];
+        
+        for (let i = 0; i < silabas.length; i++) {
+          const slot = document.createElement("div");
+          slot.classList.add("slot", "silaba");
+          
+          if (silabas[i] === silabaFaltante) {
+            slot.classList.add("faltante");
+            slot.textContent = "❓";
+          } else {
+            slot.textContent = silabas[i];
+          }
+          palavraBox.appendChild(slot);
+        }
+      }
+
+      const pedrasContainer = document.getElementById("pedras");
+      pedrasContainer.innerHTML = "";
+      
+      const isSilaba = faseAtual === 2;
+      opcoesEmbaralhadas.forEach((opcao, index) => {
+        const btn = document.createElement("div");
+        btn.classList.add("pedra-btn");
+        if (isSilaba) {
+          btn.classList.add("silaba-btn");
+        }
+        btn.textContent = opcao;
+        btn.dataset.index = index;
+        btn.onclick = () => saltarPara(index, opcao);
+        pedrasContainer.appendChild(btn);
+      });
+    }
+
+    function saltarPara(pedraIndex, opcaoEscolhida) {
+      if (bloqueado || jogoCompleto) return;
+      bloqueado = true;
+
+      const fase = palavrasDaFase[indiceAtual];
+      let respostaCorreta = fase.opcoes[fase.faltante];
+      
+      const saci = document.getElementById("saci-character");
+      const pedras = document.querySelectorAll(".pedra-btn");
+      const pedraSelecionada = pedras[pedraIndex];
+
+      tocarSom(400, "sine", 0.15);
+
+      saci.classList.add("pulo-anim");
+      const posX = posicoesX[Math.min(pedraIndex, posicoesX.length - 1)];
+      saci.style.left = posX + "px";
+
+      setTimeout(() => {
+        saci.classList.remove("pulo-anim");
+
+        if (opcaoEscolhida === respostaCorreta) {
+          tocarSom(523, "triangle", 0.15);
+          setTimeout(() => tocarSom(659, "triangle", 0.15), 150);
+          setTimeout(() => tocarSom(784, "triangle", 0.25), 300);
+          
+          pedraSelecionada.classList.add("acertou");
+          
+          const slotFaltante = document.querySelector(".slot.faltante");
+          if(slotFaltante) {
+            slotFaltante.textContent = respostaCorreta;
+            slotFaltante.classList.remove("faltante");
+          }
+
+          pontos += 10;
+          document.getElementById("pontos").textContent = pontos;
+          
+          saci.classList.add('saci-happy', 'saci-glow');
+          
+          const msg = document.getElementById("mensagem");
+          msg.textContent = "🎉🎊 MUITO BEM! O Saci acertou! 🎊🎉";
+          msg.style.color = "#FFD700";
+          msg.classList.add('acerto');
+
+          const containerRect = document.getElementById('game-container').getBoundingClientRect();
+          const centerX = containerRect.width / 2;
+          const centerY = containerRect.height / 2;
+          
+          for (let i = 0; i < 3; i++) {
+            setTimeout(() => {
+              criarConfetes(
+                centerX + Math.random() * 200 - 100,
+                centerY + Math.random() * 200 - 100
+              );
+            }, i * 200);
+          }
+          
+          for (let i = 0; i < 3; i++) {
+            setTimeout(() => {
+              criarEstrelas(
+                centerX + Math.random() * 300 - 150,
+                centerY + Math.random() * 300 - 150
+              );
+            }, i * 300);
+          }
+
+          const container = document.getElementById('game-container');
+          container.style.animation = 'none';
+          setTimeout(() => {
+            container.style.animation = 'containerShake 0.5s ease-in-out';
+          }, 10);
+
+          setTimeout(() => {
+            container.style.animation = '';
+            saci.classList.remove('saci-happy', 'saci-glow');
+            msg.classList.remove('acerto');
+            
+            indiceAtual++;
+            
+            if (indiceAtual >= palavrasDaFase.length) {
+              if (faseAtual === 1) {
+                mostrarParabens(() => {
+                  mudarParaFase2();
+                });
+              } else {
+                jogoCompleto = true;
+                msg.textContent = "🎉🎊 PARABÉNS! VOCÊ COMPLETOU O JOGO! 🎊🎉";
+                msg.style.color = "#FFD700";
+                msg.classList.add('acerto');
+                
+                for (let i = 0; i < 6; i++) {
+                  setTimeout(() => {
+                    criarConfetes(
+                      centerX + Math.random() * 400 - 200,
+                      centerY + Math.random() * 400 - 200,
+                      50
+                    );
+                  }, i * 400);
+                }
+                
+                setTimeout(() => {
+                  document.getElementById('btn-reiniciar').classList.add('show');
+                }, 2000);
+                
+                return;
+              }
+            } else {
+              carregarFase();
+            }
+          }, 2000);
+
+        } else {
+          tocarSom(150, "sawtooth", 0.25);
+          setTimeout(() => tocarSom(120, "sawtooth", 0.25), 200);
+          
+          pedraSelecionada.classList.add("errou");
+          saci.classList.add('saci-sad');
+          
+          const msg = document.getElementById("mensagem");
+          msg.textContent = "😅 Ops! Tente outra resposta!";
+          msg.style.color = "#EF5350";
+          msg.classList.remove('acerto');
+
+          setTimeout(() => {
+            pedraSelecionada.classList.remove("errou");
+            saci.classList.remove('saci-sad');
+            bloqueado = false;
+          }, 800);
+        }
+      }, 600);
+    }
+
+    // ============================================
+    // TECLADO
+    // ============================================
+    window.addEventListener("keydown", (e) => {
+      if (bloqueado || jogoCompleto) return;
+      const tecla = e.key.toUpperCase();
+      const fase = palavrasDaFase[indiceAtual];
+      const index = fase.opcoes.indexOf(tecla);
+      if (index !== -1) {
+        saltarPara(index, tecla);
+      }
+    });
+
+    // ============================================
+    // BOTÃO REINICIAR
+    // ============================================
+    document.getElementById('btn-reiniciar').addEventListener('click', reiniciarJogo);
+
+    // ============================================
+    // INICIAR JOGO
+    // ============================================
+    document.getElementById('total-fase').textContent = fase1Palavras.length;
+    carregarFase();
+
+    document.addEventListener('click', () => {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }, { once: true });
+
+    // ============================================
+    // VERIFICAR CARREGAMENTO DE IMAGENS
+    // ============================================
+    const saciImg = document.getElementById('saci-img');
+    saciImg.addEventListener('load', function() {
+      console.log('✅ Imagem do Saci carregada!');
+      this.classList.remove('hidden');
+    });
+    saciImg.addEventListener('error', function() {
+      console.warn('⚠️ Imagem saci.png não encontrada. Usando fallback.');
+      this.classList.add('hidden');
+    });
+
+    const bgImg = document.getElementById('bg-image');
+    bgImg.addEventListener('load', function() {
+      console.log('✅ Imagem de fundo carregada!');
+    });
+    bgImg.addEventListener('error', function() {
+      console.warn('⚠️ Imagem fundo.png não encontrada. Usando fallback.');
+      this.style.display = 'none';
+      document.getElementById('bg-fallback').style.display = 'block';
+    });
+
+    const parabensImg = document.getElementById('parabens-img');
+    parabensImg.addEventListener('load', function() {
+      console.log('✅ Imagem de parabéns carregada!');
+      this.style.display = 'block';
+      document.getElementById('parabens-fallback').style.display = 'none';
+    });
+    parabensImg.addEventListener('error', function() {
+      console.warn('⚠️ Imagem parabens.png não encontrada. Usando fallback.');
+      this.style.display = 'none';
+      document.getElementById('parabens-fallback').style.display = 'flex';
+    });
+
+    const styleShake = document.createElement('style');
+    styleShake.textContent = `
+      @keyframes containerShake {
+        0%, 100% { transform: scale(1); }
+        25% { transform: scale(1.02) rotate(-1deg); }
+        75% { transform: scale(1.02) rotate(1deg); }
+      }
+    `;
+    document.head.appendChild(styleShake);
+  </script>
+</body>
+</html>
